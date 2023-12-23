@@ -50,5 +50,4 @@ public:
 	vector<double> dajkstra(int cvor_id);
 	vector<double> belman_ford(int cvor_id);
 	Graf kruskal();
-	Graf prim();
 };

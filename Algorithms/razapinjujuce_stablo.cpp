@@ -1,42 +1,58 @@
 #include <main.h>
 #include <limits>
+#include <algorithm>
 
 using namespace std;
 
-// TODO: Implementirati pracenje komponenti povezanosti
+typedef struct {
+	Edge x;
+	int poc;
+} FullEdge;
+
 Graf Graf::kruskal()
 {
     if (is_directed()) {
-        cerr << "*** FIXME: Ovaj algoritam trenutno radi samo sa nepovezanim grafovima." << endl;
-        return Graf();
-    }
+		cerr << "*** Ovaj algoritam trenutno radi samo sa nepovezanim grafovima." << endl;
+		return Graf();
+	}
 
-    vector<bool> ukljucen(cvorovi.size(), false);
-    vector<vector<double>> matrix = listToMatrix();
-    int i, j;
-    auto find_min = [&](){
-        double minval = numeric_limits<double>::infinity();
-        int mini = -1, minj = -1;
-        for (i = 0; i < (int) cvorovi.size(); i++)
-            for (j = 0; j < (int) cvorovi.size(); j++)
-                if (matrix[i][j] < minval && !ukljucen[i] && !ukljucen[j]) {
-                    minval = matrix[i][j];
-                    mini = i;
-                    minj = j;
-                }
-        i = mini;
-        j = minj;
-        return minval;
-    };
+	vector<FullEdge> edges;
+	for (int i = 0; i < (int) grane.size(); i++)
+		for (Edge grana : grane[i])
+			edges.push_back({grana, i});
+	sort(edges.begin(), edges.end(), [](FullEdge a, FullEdge b){
+		return a.x.tezina < b.x.tezina;
+	});
 
-    vector<vector<Edge>> nove_grane(cvorovi.size());
-    while (find_min() != numeric_limits<double>::infinity()) {
-        ukljucen[i] = true;
-        ukljucen[j] = true;
-        Edge grana = {j, matrix[i][j]};
-        nove_grane[i].push_back(grana);
-        grana = {i, matrix[i][j]};
-        nove_grane[j].push_back(grana);
-    }
+	vector<int> komp(cvorovi.size(), 0);
+	vector<vector<Edge>> nove_grane(cvorovi.size());
+	int kp = 0;
+	auto add_edge = [&](FullEdge grana){
+		nove_grane[grana.x.cvor].push_back({grana.poc, grana.x.tezina});
+		nove_grane[grana.poc].push_back(grana.x);
+	};
+	for (FullEdge grana : edges) {
+		if (komp[grana.poc] == 0 && komp[grana.x.cvor] == 0) {
+			komp[grana.x.cvor] = komp[grana.poc] = ++kp;
+			add_edge(grana);
+		}
+		else if (komp[grana.poc] == 0 && komp[grana.x.cvor] != 0) {
+			komp[grana.poc] = komp[grana.x.cvor];
+			add_edge(grana);
+		}
+		else if (komp[grana.poc] != 0 && komp[grana.x.cvor] == 0) {
+			komp[grana.x.cvor] = komp[grana.poc];
+			add_edge(grana);
+		}
+		else if (komp[grana.poc] != 0 && komp[grana.x.cvor] != 0) {
+			if (komp[grana.poc] != komp[grana.x.cvor]) {
+				for (int i = 0; i < (int) komp.size(); i++)
+					if (komp[i] == komp[grana.x.cvor])
+						komp[i] = komp[grana.poc];
+				add_edge(grana);
+			}
+		}
+	}
+    
     return Graf(cvorovi, nove_grane);
 }
